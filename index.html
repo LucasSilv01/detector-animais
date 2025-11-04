@@ -343,15 +343,9 @@
     let catCount = 0;
     let dogCount = 0;
 
-    // Carregar contadores do localStorage
-    if (localStorage.getItem('catCount')) {
-      catCount = parseInt(localStorage.getItem('catCount'));
-      document.getElementById('catCount').textContent = catCount;
-    }
-    if (localStorage.getItem('dogCount')) {
-      dogCount = parseInt(localStorage.getItem('dogCount'));
-      document.getElementById('dogCount').textContent = dogCount;
-    }
+    // Resetar contadores ao recarregar a página
+    document.getElementById('catCount').textContent = 0;
+    document.getElementById('dogCount').textContent = 0;
 
     async function loadModel() {
       model = await tmImage.load(URL + "model.json", URL + "metadata.json");
@@ -372,11 +366,9 @@
       if (type === 'cat') {
         catCount++;
         document.getElementById('catCount').textContent = catCount;
-        localStorage.setItem('catCount', catCount);
       } else if (type === 'dog') {
         dogCount++;
         document.getElementById('dogCount').textContent = dogCount;
-        localStorage.setItem('dogCount', dogCount);
       }
     }
 
