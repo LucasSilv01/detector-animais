@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detector de Animais 🐶🐱</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      transition: background 0.5s ease;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+    
+    p {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1em;
+    }
+    
+    #imageInput {
+      display: none;
+    }
+    
+    .upload-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-weight: 600;
+    }
+    
+    .upload-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    #preview {
+      max-width: 100%;
+      max-height: 300px;
+      margin: 30px auto;
+      display: none;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .result {
+      font-size: 1.8em;
+      margin-top: 20px;
+      font-weight: bold;
+      padding: 20px;
+      border-radius: 15px;
+      background: #f8f9fa;
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    
+    .cat {
+      color: #ff4081;
+    }
+    
+    .dog {
+      color: #2196f3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐶 Detector de Gato ou Cachorro 🐱</h1>
+    <p>Envie uma imagem para ver se é um gato ou um cachorro!</p>
+    
+    <input type="file" accept="image/*" id="imageInput" />
+    <label for="imageInput" class="upload-btn">📷 Escolher Imagem</label>
+    
+    <img id="preview" />
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    const URL = "https://teachablemachine.withgoogle.com/models/srwBhFR4q/";
+    let model;
+
+    async function loadModel() {
+      model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+      console.log("Modelo carregado com sucesso!");
+    }
+
+    async function predict(imageElement) {
+      const predictions = await model.predict(imageElement);
+      const resultDiv = document.getElementById("result");
+      const topPrediction = predictions.sort((a, b) => b.probability - a.probability)[0];
+
+      if (topPrediction.className.toLowerCase().includes("gato")) {
+        resultDiv.innerHTML = "🐱 É um <span class='cat'>GATO!</span>";
+        document.body.style.background = "linear-gradient(135deg, #ffeef8 0%, #ffb3d9 100%)";
+      } else if (topPrediction.className.toLowerCase().includes("cachorro")) {
+        resultDiv.innerHTML = "🐶 É um <span class='dog'>CACHORRO!</span>";
+        document.body.style.background = "linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%)";
+      } else {
+        resultDiv.innerHTML = "🤔 Não consegui identificar...";
+        document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+      }
+    }
+
+    document.getElementById("imageInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const img = document.getElementById("preview");
+        img.src = window.URL.createObjectURL(file);
+        img.style.display = "block";
+
+        // Espera a imagem carregar antes de prever
+        img.onload = async () => {
+          await predict(img);
+        };
+      }
+    });
+
+    loadModel();
+  </script>
+</body>
+</html>
