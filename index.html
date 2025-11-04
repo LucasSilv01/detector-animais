@@ -336,8 +336,12 @@
   </div>
 
   <script>
-    const URL = "https://teachablemachine.withgoogle.com/models/srwBhFR4q/";
-    let model;
+    // URLs dos dois modelos
+    const ANIMALS_URL = "https://teachablemachine.withgoogle.com/models/srwBhFR4q/";
+    const PEOPLE_URL = "https://teachablemachine.withgoogle.com/models/fYZGQIxoF/";
+    
+    let animalModel;
+    let peopleModel;
     let webcamRunning = false;
     let webcamStream = null;
     let catCount = 0;
@@ -348,8 +352,19 @@
     document.getElementById('dogCount').textContent = 0;
 
     async function loadModel() {
-      model = await tmImage.load(URL + "model.json", URL + "metadata.json");
-      console.log("Modelo carregado com sucesso!");
+      try {
+        console.log("Carregando modelo de animais...");
+        animalModel = await tmImage.load(ANIMALS_URL + "model.json", ANIMALS_URL + "metadata.json");
+        console.log("Modelo de animais carregado!");
+        
+        console.log("Carregando modelo de pessoas...");
+        peopleModel = await tmImage.load(PEOPLE_URL + "model.json", PEOPLE_URL + "metadata.json");
+        console.log("Modelo de pessoas carregado!");
+        
+        console.log("Todos os modelos carregados com sucesso!");
+      } catch (error) {
+        console.error("Erro ao carregar modelos:", error);
+      }
     }
 
     function celebrateWithConfetti(color) {
@@ -377,77 +392,106 @@
       document.getElementById('loading').style.display = 'block';
       document.getElementById('result').style.display = 'none';
 
-      const predictions = await model.predict(imageElement);
-      const resultDiv = document.getElementById("result");
-      const sorted = predictions.sort((a, b) => b.probability - a.probability);
-      const topPrediction = sorted[0];
-      const secondPrediction = sorted[1];
-      const confidence = (topPrediction.probability * 100).toFixed(1);
+      try {
+        // Fazer predições com ambos os modelos
+        const animalPredictions = animalModel ? await animalModel.predict(imageElement) : [];
+        const peoplePredictions = peopleModel ? await peopleModel.predict(imageElement) : [];
+        
+        // Combinar todas as predições
+        const allPredictions = [
+          ...animalPredictions.map(p => ({...p, type: 'animal'})),
+          ...peoplePredictions.map(p => ({...p, type: 'people'}))
+        ];
+        
+        const resultDiv = document.getElementById("result");
+        const sorted = allPredictions.sort((a, b) => b.probability - a.probability);
+        const topPrediction = sorted[0];
+        const confidence = (topPrediction.probability * 100).toFixed(1);
 
-      // Esconder loading
-      document.getElementById('loading').style.display = 'none';
-      resultDiv.style.display = 'flex';
-      document.getElementById('resetBtn').style.display = 'block';
+        // Esconder loading
+        document.getElementById('loading').style.display = 'none';
+        resultDiv.style.display = 'flex';
+        document.getElementById('resetBtn').style.display = 'block';
 
-      let resultHTML = '';
-      let animalType = '';
+        let resultHTML = '';
+        let detectionType = '';
 
-      // Verificar características que indicam que não é gato/cachorro:
-      // 1. Todas as probabilidades são muito baixas
-      // 2. As probabilidades são muito próximas (indicando incerteza)
-      const allLow = predictions.every(p => p.probability < 0.85);
-      const tooClose = Math.abs(topPrediction.probability - secondPrediction.probability) < 0.15;
-      
-      if (allLow || tooClose) {
-        resultHTML = `
-          <div class="result-icon">🤔❓</div>
-          <div>Hmm... isso não parece ser um gato ou cachorro!</div>
-          <div class="confidence">Talvez seja uma banana? 🍌</div>
-          <div style="font-size: 0.8em; color: #999; margin-top: 10px;">
-            ${topPrediction.className}: ${confidence}% | ${secondPrediction.className}: ${(secondPrediction.probability * 100).toFixed(1)}%
-          </div>
-        `;
-        document.body.style.background = "linear-gradient(135deg, #ffd54f 0%, #ffb300 100%)";
+        console.log("Predições:", {
+          animals: animalPredictions,
+          people: peoplePredictions,
+          top: topPrediction
+        });
+
+        // Verificar se temos uma detecção confiável
+        if (topPrediction.probability < 0.70) {
+          resultHTML = `
+            <div class="result-icon">🤔❓</div>
+            <div>Não consegui identificar com certeza...</div>
+            <div class="confidence">Melhor resultado: ${topPrediction.className} (${confidence}%)</div>
+            <div style="font-size: 0.8em; color: #999; margin-top: 10px;">
+              Tipo: ${topPrediction.type === 'animal' ? 'Animal' : 'Pessoa'}
+            </div>
+          `;
+          document.body.style.background = "linear-gradient(135deg, #ffd54f 0%, #ffb300 100%)";
+          resultDiv.innerHTML = resultHTML;
+          return;
+        }
+
+        // Detecção confiável
+        if (topPrediction.type === 'animal') {
+          if (topPrediction.className.toLowerCase().includes("gato")) {
+            detectionType = 'cat';
+            resultHTML = `
+              <div class="result-icon animated-icon">🐱</div>
+              <div>É um <span class='cat'>GATO!</span></div>
+              <div class="confidence">Confiança: ${confidence}%</div>
+            `;
+            document.body.style.background = "linear-gradient(135deg, #ff4081 0%, #f50057 100%)";
+            catCount++;
+            document.getElementById('catCount').textContent = catCount;
+            celebrateWithConfetti('cat');
+          } else if (topPrediction.className.toLowerCase().includes("cachorro") || topPrediction.className.toLowerCase().includes("dog")) {
+            detectionType = 'dog';
+            resultHTML = `
+              <div class="result-icon animated-icon">🐶</div>
+              <div>É um <span class='dog'>CACHORRO!</span></div>
+              <div class="confidence">Confiança: ${confidence}%</div>
+            `;
+            document.body.style.background = "linear-gradient(135deg, #2196f3 0%, #1976d2 100%)";
+            dogCount++;
+            document.getElementById('dogCount').textContent = dogCount;
+            celebrateWithConfetti('dog');
+          }
+        } else if (topPrediction.type === 'people') {
+          detectionType = 'person';
+          resultHTML = `
+            <div class="result-icon animated-icon">🤷‍♂️</div>
+            <div>Opa! Isso é uma <span style='color: #FF6B6B; font-weight: bold;'>PESSOA!</span></div>
+            <div style='font-size: 0.9em; color: #666; margin: 10px 0;'>Eu estava esperando um pet fofo... 🐾</div>
+            <div class="confidence">Mas ok, humano detectado com ${confidence}% de certeza 😅</div>
+            <div style='font-size: 0.8em; color: #999; margin-top: 8px;'>💡 Dica: Que tal mostrar seu gato ou cachorro?</div>
+          `;
+          document.body.style.background = "linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)";
+          // Confetti "decepcionado" com cores mais neutras
+          confetti({
+            particleCount: 50,
+            spread: 50,
+            origin: { y: 0.6 },
+            colors: ['#FF6B6B', '#FFE66D', '#FF8E53'],
+            scalar: 0.8
+          });
+        }
+
         resultDiv.innerHTML = resultHTML;
-        return;
+      } catch (error) {
+        console.error("Erro na predição:", error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('result').innerHTML = `
+          <div class="result-icon">❌</div>
+          <div>Erro ao processar a imagem</div>
+        `;
+        document.getElementById('result').style.display = 'flex';
       }
-
-      if (topPrediction.className.toLowerCase().includes("gato")) {
-        animalType = 'cat';
-        resultHTML = `
-          <div class="result-icon animated-icon">🐱</div>
-          <div>É um <span class='cat'>GATO!</span></div>
-          <div class="confidence">Confiança: ${confidence}%</div>
-          <div class="confidence-bar">
-            <div class="confidence-fill" style="width: ${confidence}%; background: linear-gradient(90deg, #ff4081 0%, #f50057 100%);"></div>
-          </div>
-        `;
-        document.body.style.background = "linear-gradient(135deg, #ffeef8 0%, #ffb3d9 100%)";
-        updateCounter('cat');
-        celebrateWithConfetti('cat');
-      } else if (topPrediction.className.toLowerCase().includes("cachorro")) {
-        animalType = 'dog';
-        resultHTML = `
-          <div class="result-icon animated-icon">🐶</div>
-          <div>É um <span class='dog'>CACHORRO!</span></div>
-          <div class="confidence">Confiança: ${confidence}%</div>
-          <div class="confidence-bar">
-            <div class="confidence-fill" style="width: ${confidence}%; background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);"></div>
-          </div>
-        `;
-        document.body.style.background = "linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%)";
-        updateCounter('dog');
-        celebrateWithConfetti('dog');
-      } else {
-        resultHTML = `
-          <div class="result-icon">🤔</div>
-          <div>Não consegui identificar...</div>
-          <div class="confidence">Confiança: ${confidence}%</div>
-        `;
-        document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-      }
-
-      resultDiv.innerHTML = resultHTML;
     }
 
     // Upload de imagem
