@@ -6,6 +6,7 @@
   <title>Detector de Animais 🐶🐱</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -31,8 +32,20 @@
       padding: 40px;
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 500px;
+      max-width: 600px;
       width: 100%;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     h1 {
@@ -40,55 +53,205 @@
       margin-bottom: 10px;
       font-size: 2em;
     }
+
+    .animated-icon {
+      display: inline-block;
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
     
     p {
       color: #666;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       font-size: 1em;
     }
+
+    .counter-section {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 15px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .counter-item {
+      text-align: center;
+    }
+
+    .counter-number {
+      font-size: 2em;
+      font-weight: bold;
+      display: block;
+    }
+
+    .counter-label {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .cat-count {
+      color: #ff4081;
+    }
+
+    .dog-count {
+      color: #2196f3;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
     
-    #imageInput {
+    #imageInput, #cameraInput {
       display: none;
     }
     
-    .upload-btn {
+    .upload-btn, .camera-btn, .webcam-btn, .reset-btn {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 15px 30px;
+      padding: 12px 25px;
       border: none;
       border-radius: 50px;
-      font-size: 16px;
+      font-size: 14px;
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
       font-weight: 600;
+      display: inline-block;
+    }
+
+    .camera-btn {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .webcam-btn {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .reset-btn {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      display: none;
+      margin-top: 15px;
     }
     
-    .upload-btn:hover {
+    .upload-btn:hover, .camera-btn:hover, .webcam-btn:hover, .reset-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
     }
+
+    .loading {
+      display: none;
+      margin: 20px auto;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 10px;
+      color: #666;
+      font-size: 0.9em;
+    }
     
-    #preview {
+    #preview, #webcam {
       max-width: 100%;
       max-height: 300px;
-      margin: 30px auto;
+      margin: 20px auto;
       display: none;
       border-radius: 15px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      animation: zoomIn 0.3s ease;
+    }
+
+    @keyframes zoomIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
     
     .result {
-      font-size: 1.8em;
+      font-size: 1.5em;
       margin-top: 20px;
       font-weight: bold;
       padding: 20px;
       border-radius: 15px;
       background: #f8f9fa;
       min-height: 70px;
-      display: flex;
+      display: none;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       transition: all 0.3s ease;
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-icon {
+      font-size: 3em;
+      margin-bottom: 10px;
+      animation: bounce 1s infinite;
+    }
+
+    .confidence {
+      font-size: 0.6em;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    .confidence-bar {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      transition: width 0.5s ease;
     }
     
     .cat {
@@ -98,58 +261,292 @@
     .dog {
       color: #2196f3;
     }
+
+    /* Responsividade Mobile */
+    @media (max-width: 600px) {
+      .container {
+        padding: 25px;
+      }
+
+      h1 {
+        font-size: 1.5em;
+      }
+
+      .result {
+        font-size: 1.2em;
+      }
+
+      .counter-number {
+        font-size: 1.5em;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .upload-btn, .camera-btn, .webcam-btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🐶 Detector de Gato ou Cachorro 🐱</h1>
-    <p>Envie uma imagem para ver se é um gato ou um cachorro!</p>
+    <p>Envie uma imagem, tire uma foto ou use a webcam!</p>
     
-    <input type="file" accept="image/*" id="imageInput" />
-    <label for="imageInput" class="upload-btn">📷 Escolher Imagem</label>
+    <!-- Contador -->
+    <div class="counter-section">
+      <div class="counter-item">
+        <span class="counter-number cat-count" id="catCount">0</span>
+        <span class="counter-label">🐱 Gatos</span>
+      </div>
+      <div class="counter-item">
+        <span class="counter-number dog-count" id="dogCount">0</span>
+        <span class="counter-label">🐶 Cachorros</span>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="button-group">
+      <input type="file" accept="image/*" id="imageInput" />
+      <label for="imageInput" class="upload-btn">� Escolher Imagem</label>
+      
+      <input type="file" accept="image/*" capture="environment" id="cameraInput" />
+      <label for="cameraInput" class="camera-btn">📸 Tirar Foto</label>
+      
+      <button class="webcam-btn" id="webcamBtn">🎥 Webcam ao Vivo</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Analisando...</div>
+    </div>
     
+    <!-- Preview -->
     <img id="preview" />
+    <video id="webcam" autoplay playsinline></video>
+    
+    <!-- Resultado -->
     <div id="result" class="result"></div>
+
+    <!-- Botão Testar Outra -->
+    <button class="reset-btn" id="resetBtn">🔄 Testar Outra Imagem</button>
   </div>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/srwBhFR4q/";
     let model;
+    let webcamRunning = false;
+    let webcamStream = null;
+    let catCount = 0;
+    let dogCount = 0;
+
+    // Carregar contadores do localStorage
+    if (localStorage.getItem('catCount')) {
+      catCount = parseInt(localStorage.getItem('catCount'));
+      document.getElementById('catCount').textContent = catCount;
+    }
+    if (localStorage.getItem('dogCount')) {
+      dogCount = parseInt(localStorage.getItem('dogCount'));
+      document.getElementById('dogCount').textContent = dogCount;
+    }
 
     async function loadModel() {
       model = await tmImage.load(URL + "model.json", URL + "metadata.json");
       console.log("Modelo carregado com sucesso!");
     }
 
-    async function predict(imageElement) {
-      const predictions = await model.predict(imageElement);
-      const resultDiv = document.getElementById("result");
-      const topPrediction = predictions.sort((a, b) => b.probability - a.probability)[0];
+    function celebrateWithConfetti(color) {
+      const colors = color === 'cat' ? ['#ff4081', '#ff80ab', '#f50057'] : ['#2196f3', '#64b5f6', '#1976d2'];
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: colors
+      });
+    }
 
-      if (topPrediction.className.toLowerCase().includes("gato")) {
-        resultDiv.innerHTML = "🐱 É um <span class='cat'>GATO!</span>";
-        document.body.style.background = "linear-gradient(135deg, #ffeef8 0%, #ffb3d9 100%)";
-      } else if (topPrediction.className.toLowerCase().includes("cachorro")) {
-        resultDiv.innerHTML = "🐶 É um <span class='dog'>CACHORRO!</span>";
-        document.body.style.background = "linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%)";
-      } else {
-        resultDiv.innerHTML = "🤔 Não consegui identificar...";
-        document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    function updateCounter(type) {
+      if (type === 'cat') {
+        catCount++;
+        document.getElementById('catCount').textContent = catCount;
+        localStorage.setItem('catCount', catCount);
+      } else if (type === 'dog') {
+        dogCount++;
+        document.getElementById('dogCount').textContent = dogCount;
+        localStorage.setItem('dogCount', dogCount);
       }
     }
 
+    async function predict(imageElement) {
+      // Mostrar loading
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+
+      const predictions = await model.predict(imageElement);
+      const resultDiv = document.getElementById("result");
+      const sorted = predictions.sort((a, b) => b.probability - a.probability);
+      const topPrediction = sorted[0];
+      const secondPrediction = sorted[1];
+      const confidence = (topPrediction.probability * 100).toFixed(1);
+
+      // Esconder loading
+      document.getElementById('loading').style.display = 'none';
+      resultDiv.style.display = 'flex';
+      document.getElementById('resetBtn').style.display = 'block';
+
+      let resultHTML = '';
+      let animalType = '';
+
+      // Verificar características que indicam que não é gato/cachorro:
+      // 1. Todas as probabilidades são muito baixas
+      // 2. As probabilidades são muito próximas (indicando incerteza)
+      const allLow = predictions.every(p => p.probability < 0.85);
+      const tooClose = Math.abs(topPrediction.probability - secondPrediction.probability) < 0.15;
+      
+      if (allLow || tooClose) {
+        resultHTML = `
+          <div class="result-icon">🤔❓</div>
+          <div>Hmm... isso não parece ser um gato ou cachorro!</div>
+          <div class="confidence">Talvez seja uma banana? 🍌</div>
+          <div style="font-size: 0.8em; color: #999; margin-top: 10px;">
+            ${topPrediction.className}: ${confidence}% | ${secondPrediction.className}: ${(secondPrediction.probability * 100).toFixed(1)}%
+          </div>
+        `;
+        document.body.style.background = "linear-gradient(135deg, #ffd54f 0%, #ffb300 100%)";
+        resultDiv.innerHTML = resultHTML;
+        return;
+      }
+
+      if (topPrediction.className.toLowerCase().includes("gato")) {
+        animalType = 'cat';
+        resultHTML = `
+          <div class="result-icon animated-icon">🐱</div>
+          <div>É um <span class='cat'>GATO!</span></div>
+          <div class="confidence">Confiança: ${confidence}%</div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" style="width: ${confidence}%; background: linear-gradient(90deg, #ff4081 0%, #f50057 100%);"></div>
+          </div>
+        `;
+        document.body.style.background = "linear-gradient(135deg, #ffeef8 0%, #ffb3d9 100%)";
+        updateCounter('cat');
+        celebrateWithConfetti('cat');
+      } else if (topPrediction.className.toLowerCase().includes("cachorro")) {
+        animalType = 'dog';
+        resultHTML = `
+          <div class="result-icon animated-icon">🐶</div>
+          <div>É um <span class='dog'>CACHORRO!</span></div>
+          <div class="confidence">Confiança: ${confidence}%</div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" style="width: ${confidence}%; background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);"></div>
+          </div>
+        `;
+        document.body.style.background = "linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%)";
+        updateCounter('dog');
+        celebrateWithConfetti('dog');
+      } else {
+        resultHTML = `
+          <div class="result-icon">🤔</div>
+          <div>Não consegui identificar...</div>
+          <div class="confidence">Confiança: ${confidence}%</div>
+        `;
+        document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+      }
+
+      resultDiv.innerHTML = resultHTML;
+    }
+
+    // Upload de imagem
     document.getElementById("imageInput").addEventListener("change", async (event) => {
       const file = event.target.files[0];
       if (file) {
+        stopWebcam();
         const img = document.getElementById("preview");
         img.src = window.URL.createObjectURL(file);
         img.style.display = "block";
 
-        // Espera a imagem carregar antes de prever
         img.onload = async () => {
           await predict(img);
         };
       }
+    });
+
+    // Tirar foto com câmera
+    document.getElementById("cameraInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        stopWebcam();
+        const img = document.getElementById("preview");
+        img.src = window.URL.createObjectURL(file);
+        img.style.display = "block";
+
+        img.onload = async () => {
+          await predict(img);
+        };
+      }
+    });
+
+    // Webcam ao vivo
+    document.getElementById("webcamBtn").addEventListener("click", async () => {
+      if (!webcamRunning) {
+        await startWebcam();
+      } else {
+        stopWebcam();
+      }
+    });
+
+    async function startWebcam() {
+      const webcam = document.getElementById("webcam");
+      const preview = document.getElementById("preview");
+      
+      preview.style.display = "none";
+      webcam.style.display = "block";
+      
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "environment" },
+          audio: false 
+        });
+        webcam.srcObject = webcamStream;
+        webcamRunning = true;
+        document.getElementById("webcamBtn").textContent = "⏹️ Parar Webcam";
+        
+        // Detecção contínua
+        webcam.onloadedmetadata = () => {
+          predictWebcam();
+        };
+      } catch (err) {
+        alert("Não foi possível acessar a câmera: " + err.message);
+      }
+    }
+
+    async function predictWebcam() {
+      if (webcamRunning) {
+        const webcam = document.getElementById("webcam");
+        await predict(webcam);
+        setTimeout(() => predictWebcam(), 3000); // Analisa a cada 3 segundos
+      }
+    }
+
+    function stopWebcam() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+      }
+      webcamRunning = false;
+      document.getElementById("webcam").style.display = "none";
+      document.getElementById("webcamBtn").textContent = "🎥 Webcam ao Vivo";
+    }
+
+    // Botão reset
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      stopWebcam();
+      document.getElementById("preview").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("resetBtn").style.display = "none";
+      document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
     });
 
     loadModel();
