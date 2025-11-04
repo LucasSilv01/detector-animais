@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Detector de Animais 🐶🐱</title>
+  <title>Detector Inteligente 🐶🐱👤</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -292,8 +292,8 @@
 </head>
 <body>
   <div class="container">
-    <h1>🐶 Detector de Gato ou Cachorro 🐱</h1>
-    <p>Envie uma imagem, tire uma foto ou use a webcam!</p>
+    <h1>🐶 Detector Inteligente 🐱👤</h1>
+    <p>Detecta gatos, cachorros e pessoas! Envie uma imagem, tire uma foto ou use a webcam!</p>
     
     <!-- Contador -->
     <div class="counter-section">
@@ -310,7 +310,7 @@
     <!-- Botões -->
     <div class="button-group">
       <input type="file" accept="image/*" id="imageInput" />
-      <label for="imageInput" class="upload-btn">� Escolher Imagem</label>
+      <label for="imageInput" class="upload-btn">📁 Escolher Imagem</label>
       
       <input type="file" accept="image/*" capture="environment" id="cameraInput" />
       <label for="cameraInput" class="camera-btn">📸 Tirar Foto</label>
@@ -336,10 +336,10 @@
   </div>
 
   <script>
-    // URL do modelo de animais
-    const ANIMALS_URL = "https://teachablemachine.withgoogle.com/models/srwBhFR4q/";
+    // URL do modelo unificado (pessoas, gatos e cachorros)
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/fYZGQIxoF/";
     
-    let animalModel;
+    let model;
     let webcamRunning = false;
     let webcamStream = null;
     let catCount = 0;
@@ -351,10 +351,10 @@
 
     async function loadModel() {
       try {
-        console.log("Carregando modelo de animais...");
-        animalModel = await tmImage.load(ANIMALS_URL + "model.json", ANIMALS_URL + "metadata.json");
-        console.log("Modelo de animais carregado!", animalModel);
-        console.log("Classes do modelo de animais:", animalModel.getClassLabels());
+        console.log("Carregando modelo unificado...");
+        model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+        console.log("Modelo carregado!", model);
+        console.log("Classes do modelo:", model.getClassLabels());
         
         console.log("Modelo carregado com sucesso!");
       } catch (error) {
@@ -388,15 +388,15 @@
       document.getElementById('result').style.display = 'none';
 
       try {
-        // Fazer predição apenas com o modelo de animais
-        console.log("Fazendo predição com modelo de animais...");
-        console.log("Modelo de animais disponível:", !!animalModel);
+        // Fazer predição com o modelo unificado
+        console.log("Fazendo predição com modelo unificado...");
+        console.log("Modelo disponível:", !!model);
         
-        if (!animalModel) {
-          throw new Error("Modelo de animais não carregado");
+        if (!model) {
+          throw new Error("Modelo não carregado");
         }
         
-        const predictions = await animalModel.predict(imageElement);
+        const predictions = await model.predict(imageElement);
         console.log("Predições:", predictions);
         
         const resultDiv = document.getElementById("result");
@@ -415,13 +415,13 @@
         console.log("Confiança:", topPrediction.probability);
 
         // Verificar se temos uma detecção confiável
-        if (topPrediction.probability < 0.40) {
+        if (topPrediction.probability < 0.50) {
           resultHTML = `
             <div class="result-icon">🤔❓</div>
             <div>Não consegui identificar com certeza...</div>
             <div class="confidence">Melhor resultado: ${topPrediction.className} (${confidence}%)</div>
             <div style="font-size: 0.8em; color: #999; margin-top: 10px;">
-              Talvez não seja um gato ou cachorro? 🐾
+              Tente uma imagem mais clara! 📸
             </div>
           `;
           document.body.style.background = "linear-gradient(135deg, #ffd54f 0%, #ffb300 100%)";
@@ -429,9 +429,9 @@
           return;
         }
 
-        // Detecção confiável de animais
+        // Detecção das três classes
         const className = topPrediction.className.toLowerCase();
-        console.log("Classe do animal detectada:", className);
+        console.log("Classe detectada:", className);
         
         if (className.includes("gato") || className.includes("cat")) {
           resultHTML = `
@@ -453,15 +453,32 @@
           dogCount++;
           document.getElementById('dogCount').textContent = dogCount;
           celebrateWithConfetti('dog');
-        } else {
-          // Animal não identificado especificamente
+        } else if (className.includes("pessoa") || className.includes("people") || className.includes("human") || className.includes("person")) {
           resultHTML = `
-            <div class="result-icon animated-icon">🐾</div>
-            <div>Animal detectado: <span style='font-weight: bold;'>${topPrediction.className}</span></div>
+            <div class="result-icon animated-icon">🤷‍♂️</div>
+            <div>Opa! Isso é uma <span style='color: #FF6B6B; font-weight: bold;'>PESSOA!</span></div>
+            <div style='font-size: 0.9em; color: #666; margin: 10px 0;'>Eu estava esperando um pet fofo... 🐾</div>
+            <div class="confidence">Mas ok, humano detectado com ${confidence}% de certeza 😅</div>
+            <div style='font-size: 0.8em; color: #999; margin-top: 8px;'>💡 Dica: Que tal mostrar seu gato ou cachorro?</div>
+          `;
+          document.body.style.background = "linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)";
+          // Confetti "decepcionado" com cores mais neutras
+          confetti({
+            particleCount: 50,
+            spread: 50,
+            origin: { y: 0.6 },
+            colors: ['#FF6B6B', '#FFE66D', '#FF8E53'],
+            scalar: 0.8
+          });
+        } else {
+          // Classe não reconhecida especificamente
+          resultHTML = `
+            <div class="result-icon animated-icon">❓</div>
+            <div>Detectei: <span style='font-weight: bold;'>${topPrediction.className}</span></div>
             <div class="confidence">Confiança: ${confidence}%</div>
             <div style='font-size: 0.8em; color: #999; margin-top: 8px;'>Classe: ${topPrediction.className}</div>
           `;
-          document.body.style.background = "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)";
+          document.body.style.background = "linear-gradient(135deg, #9C27B0 0%, #673AB7 100%)";
         }
 
         resultDiv.innerHTML = resultHTML;
@@ -475,7 +492,6 @@
         document.getElementById('result').style.display = 'flex';
       }
     }
-        
 
     // Upload de imagem
     document.getElementById("imageInput").addEventListener("change", async (event) => {
